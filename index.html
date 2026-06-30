@@ -120,7 +120,6 @@
     transition: border-color 0.2s, color 0.2s;
   }
   #status-line button:hover{ border-color: var(--gold); color: var(--gold-bright); }
-  #status-line button#reset-btn:hover{ border-color: var(--burgundy-bright); color: var(--burgundy-bright); }
   #status-line button#home-btn:hover{ border-color: var(--gold); color: var(--gold-bright); }
 
   /* Landing view */
@@ -598,7 +597,6 @@
     <span class="btn-row">
       <button id="home-btn">← Home</button>
       <button id="mood-btn">Find Me a Drink</button>
-      <button id="refresh-btn">Refresh</button>
       <button id="reset-btn">Reset</button>
     </span>
   </div>
@@ -696,7 +694,6 @@
     loadingText: document.getElementById('loading-text'),
     loadingProgress: document.getElementById('loading-progress'),
     statusText: document.getElementById('status-text'),
-    refreshBtn: document.getElementById('refresh-btn'),
     resetBtn: document.getElementById('reset-btn'),
     nameSearch: document.getElementById('name-search'),
     ingredientSearch: document.getElementById('ingredient-search'),
@@ -748,15 +745,18 @@
     });
   }
 
-  async function buildCatalog(){
-    els.loadingOverlay.classList.remove('hidden');
-    startLoadingMessages();
+  async function buildCatalog(opts){
+    const silent = !!(opts && opts.silent);
+    if (!silent){
+      els.loadingOverlay.classList.remove('hidden');
+      startLoadingMessages();
+    }
     const results = [];
     let cachedOk = false;
     try {
       for (let i = 0; i < LETTERS.length; i++){
         const letter = LETTERS[i];
-        els.loadingProgress.textContent = `${letter.toUpperCase()} · ${i + 1}/${LETTERS.length}`;
+        if (!silent) els.loadingProgress.textContent = `${letter.toUpperCase()} · ${i + 1}/${LETTERS.length}`;
         try {
           const drinks = await fetchLetter(letter);
           results.push(...drinks);
@@ -778,13 +778,17 @@
         console.warn('Could not cache catalog to localStorage (likely quota exceeded). Continuing without cache.', err);
       }
     } finally {
-      stopLoadingMessages();
-      els.loadingOverlay.classList.add('hidden');
+      if (!silent){
+        stopLoadingMessages();
+        els.loadingOverlay.classList.add('hidden');
+      }
     }
-    if (cachedOk){
-      updateStatusLine();
-    } else {
-      els.statusText.textContent = `${catalog.length} drinks loaded (not cached — storage quota exceeded)`;
+    if (!silent){
+      if (cachedOk){
+        updateStatusLine();
+      } else {
+        els.statusText.textContent = `${catalog.length} drinks loaded (not cached — storage quota exceeded)`;
+      }
     }
   }
 
@@ -1007,8 +1011,15 @@
 
   function openMoodQuiz(){
     quizSteps = buildQuizSteps();
-    moodStep = 0;
     moodAnswers = {};
+    if (alcMode){
+      // The Alcoholic/Non-Alcoholic toggle on the browse view is already an
+      // explicit answer to this exact question — asking it again in the quiz
+      // would let someone contradict their own filter by accident.
+      moodAnswers.alcoholic = alcMode;
+      quizSteps = quizSteps.filter(s => s.id !== 'alcoholic');
+    }
+    moodStep = 0;
     els.moodOverlay.classList.add('open');
     renderMoodStep();
   }
@@ -1123,16 +1134,9 @@
 
   els.closeDetail.addEventListener('click', closeDetail);
   els.detailOverlay.addEventListener('click', (e) => { if (e.target === els.detailOverlay) closeDetail(); });
-  els.refreshBtn.addEventListener('click', async () => {
-    await buildCatalog();
-    populateMainIngredientFilter();
-    applyFilters();
-  });
-  els.resetBtn.addEventListener('click', async () => {
-    const confirmed = confirm('Reset will clear the cached catalog and all filters, then re-download everything from TheCocktailDB. Continue?');
-    if (!confirmed) return;
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem(CACHE_TIME_KEY);
+  els.resetBtn.addEventListener('click', () => {
+    // Pure filter clear — no network call, no cache touched, no confirm
+    // dialog needed since nothing destructive happens to stored data.
     els.nameSearch.value = '';
     els.ingredientSearch.value = '';
     els.mainIngredientFilter.value = '';
@@ -1140,9 +1144,6 @@
     els.alcBtnAlcoholic.classList.remove('active');
     els.alcBtnNonalcoholic.classList.remove('active');
     document.body.classList.remove('mode-alcoholic', 'mode-nonalcoholic');
-    catalog = [];
-    await buildCatalog();
-    populateMainIngredientFilter();
     applyFilters();
   });
 
@@ -1153,11 +1154,26 @@
 
   // ---- Init -----------------------------------------------------------
 
+  const CACHE_STALE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
   async function init(){
     const hasCache = loadCatalogFromCache();
     if (hasCache){
       els.loadingOverlay.classList.add('hidden');
       updateStatusLine();
+
+      const cachedAt = Number(localStorage.getItem(CACHE_TIME_KEY) || 0);
+      if (Date.now() - cachedAt > CACHE_STALE_MS){
+        // Cache is over a month old. TheCocktailDB's free tier has no
+        // "what changed since X" endpoint, so there's no cheap way to check
+        // for new drinks without re-fetching everything anyway — but at
+        // least this can happen quietly in the background on an occasional
+        // stale load, rather than needing a manual button at all.
+        buildCatalog({ silent: true }).then(() => {
+          populateMainIngredientFilter();
+          applyFilters();
+        });
+      }
     } else {
       await buildCatalog();
     }
