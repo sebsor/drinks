@@ -1813,6 +1813,17 @@
   }
 
   init();
+
+  if ('serviceWorker' in navigator){
+    // Required for Chrome to treat "Add to Home Screen" as a true PWA
+    // install rather than a bookmark shortcut (the small Chrome badge
+    // on the icon). Registered relative to this page, so it only works
+    // when index.html and sw.js are served from the same location —
+    // it has no effect when this file is just opened locally.
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('Service worker registration failed (sw.js missing or not served over https/localhost?)', err);
+    });
+  }
 })();
 </script>
 
