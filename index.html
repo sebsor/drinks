@@ -415,6 +415,46 @@
     white-space: nowrap;
   }
 
+  .unit-help{
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+  }
+  .unit-help summary{
+    color: var(--text-dim);
+    cursor: pointer;
+    font-style: italic;
+    padding: 6px 0;
+    list-style: none;
+  }
+  .unit-help summary::-webkit-details-marker{ display: none; }
+  .unit-help summary::before{
+    content: '+ ';
+    color: var(--gold-dim);
+    font-style: normal;
+  }
+  .unit-help[open] summary::before{ content: '– '; }
+  .unit-help summary:hover{ color: var(--gold-bright); }
+  .unit-help-list{
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--hairline);
+  }
+  .unit-help-list li{
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    color: var(--text-dim);
+  }
+  .unit-help-list li span:last-child{ color: var(--gold-bright); font-style: italic; }
+  .unit-help-note{
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--text-dim);
+  }
+
   .instructions{
     font-size: 1rem;
     line-height: 1.75;
@@ -634,6 +674,17 @@
       </div>
       <div class="detail-section-label">Ingredients</div>
       <ul class="ingredient-list" id="detail-ingredients"></ul>
+      <details class="unit-help">
+        <summary>oz, cups, tbsp? Rough metric guide</summary>
+        <ul class="unit-help-list">
+          <li><span>1 oz</span><span>≈ 3 cl</span></li>
+          <li><span>1 tbsp</span><span>≈ 1.5 cl</span></li>
+          <li><span>1 tsp</span><span>≈ 0.5 cl</span></li>
+          <li><span>1 cup</span><span>≈ 2.5 dl</span></li>
+          <li><span>1 dash</span><span>a few drops</span></li>
+        </ul>
+        <p class="unit-help-note">Rounded for easy pouring, not lab-precise.</p>
+      </details>
       <div class="detail-section-label">How to make it</div>
       <p class="instructions" id="detail-instructions"></p>
     </div>
