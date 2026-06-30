@@ -1226,7 +1226,7 @@
     card.innerHTML = `
       <div class="img-wrap">
         <button type="button" class="fav-btn${isFavorite(d.idDrink) ? ' active' : ''}" aria-label="Toggle favorite">${isFavorite(d.idDrink) ? '♥' : '♡'}</button>
-        <img src="${escapeAttr(d.strDrinkThumb)}/medium" loading="lazy" alt="${escapeAttr(d.strDrink)}">
+        <img src="${escapeAttr(d.strDrinkThumb)}" loading="lazy" alt="${escapeAttr(d.strDrink)}">
       </div>
       <div class="name">${escapeHtml(d.strDrink)}</div>
       <div class="meta">${escapeHtml(d.strCategory || '')}</div>
