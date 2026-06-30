@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Bar — Cocktail Explorer</title>
+<style>
+  :root{
+    --bg: #1b1714;
+    --bg-elevated: #241e19;
+    --bg-card: #2a231d;
+    --border: #3a322a;
+    --text: #ede5d8;
+    --text-dim: #a89a87;
+    --amber: #c9842f;
+    --amber-bright: #e3a04f;
+    --copper-line: #4a2f1c;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  header{
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--bg-elevated), var(--bg));
+  }
+
+  header h1{
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    margin: 0 0 4px;
+    letter-spacing: 0.5px;
+  }
+
+  header h1 .amp{
+    color: var(--amber-bright);
+    font-style: italic;
+  }
+
+  header p.tagline{
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  #status-line{
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  #status-line button{
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  #status-line button:hover{ border-color: var(--amber); color: var(--amber-bright); }
+
+  main{
+    padding: 18px 20px 60px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .controls{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .search-row{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  input[type="text"], select{
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    flex: 1 1 200px;
+  }
+
+  input[type="text"]:focus, select:focus{
+    outline: none;
+    border-color: var(--amber);
+  }
+
+  .filter-row{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-row select{ flex: 1 1 200px; }
+
+  #result-count{
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  #drink-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+
+  .drink-card{
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .drink-card:hover, .drink-card:focus-visible{
+    border-color: var(--amber);
+    transform: translateY(-2px);
+  }
+  .drink-card img{
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    background: var(--bg-elevated);
+  }
+  .drink-card .name{
+    padding: 8px 10px 10px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+  .drink-card .meta{
+    padding: 0 10px 10px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+
+  #empty-state{
+    text-align: center;
+    color: var(--text-dim);
+    padding: 50px 20px;
+    display: none;
+  }
+
+  /* Detail overlay */
+  #detail-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,8,6,0.85);
+    z-index: 50;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  #detail-overlay.open{ display: block; }
+
+  .detail-card{
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .detail-close{
+    position: sticky;
+    top: 0;
+    text-align: right;
+    padding: 10px;
+    background: var(--bg-elevated);
+    z-index: 2;
+  }
+  .detail-close button{
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .detail-close button:hover{ border-color: var(--amber); }
+
+  .detail-img-wrap{
+    width: 100%;
+    background: var(--bg-card);
+  }
+  .detail-img-wrap img{
+    width: 100%;
+    max-height: 340px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .detail-body{ padding: 22px 26px 30px; }
+
+  .detail-body h2{
+    font-family: var(--font-display);
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+  }
+
+  .detail-tags{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .detail-tags span{
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--amber-bright);
+    border: 1px solid var(--copper-line);
+    border-radius: 12px;
+    padding: 3px 10px;
+  }
+
+  .detail-section-label{
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin: 22px 0 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  ul.ingredient-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.ingredient-list li{
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 0.9rem;
+  }
+  ul.ingredient-list li .measure{
+    color: var(--amber-bright);
+    text-align: right;
+    padding-left: 14px;
+  }
+
+  .instructions{
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-line;
+  }
+
+  #loading-overlay{
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  #loading-overlay.hidden{ display: none; }
+  .spinner{
+    width: 26px; height: 26px;
+    border: 3px solid var(--border);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  #loading-text{ color: var(--text-dim); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div id="loading-text">Loading catalog…</div>
+</div>
+
+<header>
+  <h1>Back Bar<span class="amp">.</span></h1>
+  <p class="tagline">A cocktail catalog, built on TheCocktailDB</p>
+  <div id="status-line">
+    <span id="status-text"></span>
+    <button id="refresh-btn">Refresh catalog</button>
+  </div>
+</header>
+
+<main>
+  <div class="controls">
+    <div class="search-row">
+      <input type="text" id="name-search" placeholder="Search by drink name…">
+      <input type="text" id="ingredient-search" placeholder="Search by ingredient (e.g. lime juice)…">
+    </div>
+    <div class="filter-row">
+      <select id="main-ingredient-filter">
+        <option value="">All main ingredients</option>
+      </select>
+      <select id="alcoholic-filter">
+        <option value="">Alcoholic & non-alcoholic</option>
+        <option value="Alcoholic">Alcoholic only</option>
+        <option value="Non alcoholic">Non-alcoholic only</option>
+      </select>
+    </div>
+  </div>
+
+  <p id="result-count"></p>
+  <div id="drink-grid"></div>
+  <div id="empty-state">No drinks match your filters. Try clearing one of them.</div>
+</main>
+
+<div id="detail-overlay">
+  <div class="detail-card">
+    <div class="detail-close"><button id="close-detail">Close ✕</button></div>
+    <div class="detail-img-wrap"><img id="detail-img" alt=""></div>
+    <div class="detail-body">
+      <h2 id="detail-name"></h2>
+      <div class="detail-tags" id="detail-tags"></div>
+      <div class="detail-section-label">Ingredients</div>
+      <ul class="ingredient-list" id="detail-ingredients"></ul>
+      <div class="detail-section-label">How to make it</div>
+      <p class="instructions" id="detail-instructions"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const API_BASE = 'https://www.thecocktaildb.com/api/json/v1/1/';
+  const CACHE_KEY = 'backbar_catalog_v1';
+  const CACHE_TIME_KEY = 'backbar_catalog_time_v1';
+  const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+  let catalog = []; // flat array of drink objects from the API
+
+  const els = {
+    loadingOverlay: document.getElementById('loading-overlay'),
+    loadingText: document.getElementById('loading-text'),
+    statusText: document.getElementById('status-text'),
+    refreshBtn: document.getElementById('refresh-btn'),
+    nameSearch: document.getElementById('name-search'),
+    ingredientSearch: document.getElementById('ingredient-search'),
+    mainIngredientFilter: document.getElementById('main-ingredient-filter'),
+    alcoholicFilter: document.getElementById('alcoholic-filter'),
+    resultCount: document.getElementById('result-count'),
+    grid: document.getElementById('drink-grid'),
+    emptyState: document.getElementById('empty-state'),
+    detailOverlay: document.getElementById('detail-overlay'),
+    closeDetail: document.getElementById('close-detail'),
+    detailImg: document.getElementById('detail-img'),
+    detailName: document.getElementById('detail-name'),
+    detailTags: document.getElementById('detail-tags'),
+    detailIngredients: document.getElementById('detail-ingredients'),
+    detailInstructions: document.getElementById('detail-instructions'),
+  };
+
+  // ---- Catalog loading ----------------------------------------------
+
+  async function fetchLetter(letter){
+    const res = await fetch(`${API_BASE}search.php?f=${letter}`);
+    const data = await res.json();
+    return data.drinks || [];
+  }
+
+  async function buildCatalog(){
+    els.loadingOverlay.classList.remove('hidden');
+    const results = [];
+    for (let i = 0; i < LETTERS.length; i++){
+      const letter = LETTERS[i];
+      els.loadingText.textContent = `Loading catalog… (${letter.toUpperCase()}, ${i + 1}/${LETTERS.length})`;
+      try {
+        const drinks = await fetchLetter(letter);
+        results.push(...drinks);
+      } catch (err) {
+        console.error('Failed to fetch letter', letter, err);
+      }
+    }
+    catalog = results;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(catalog));
+    localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+    els.loadingOverlay.classList.add('hidden');
+    updateStatusLine();
+  }
+
+  function loadCatalogFromCache(){
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return false;
+    try {
+      catalog = JSON.parse(raw);
+      return Array.isArray(catalog) && catalog.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  function updateStatusLine(){
+    const ts = Number(localStorage.getItem(CACHE_TIME_KEY) || 0);
+    const when = ts ? new Date(ts).toLocaleString() : 'unknown';
+    els.statusText.textContent = `${catalog.length} drinks cached · last updated ${when}`;
+  }
+
+  // ---- Filter UI population ------------------------------------------
+
+  function populateMainIngredientFilter(){
+    const set = new Set();
+    catalog.forEach(d => { if (d.strIngredient1) set.add(d.strIngredient1.trim()); });
+    const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));
+    els.mainIngredientFilter.innerHTML = '<option value="">All main ingredients</option>' +
+      sorted.map(i => `<option value="${escapeAttr(i)}">${escapeHtml(i)}</option>`).join('');
+  }
+
+  // ---- Filtering / rendering ------------------------------------------
+
+  function getAllIngredients(drink){
+    const list = [];
+    for (let i = 1; i <= 15; i++){
+      const ing = drink['strIngredient' + i];
+      if (ing) list.push(ing.trim());
+    }
+    return list;
+  }
+
+  function applyFilters(){
+    const nameQ = els.nameSearch.value.trim().toLowerCase();
+    const ingQ = els.ingredientSearch.value.trim().toLowerCase();
+    const mainIng = els.mainIngredientFilter.value;
+    const alcFilter = els.alcoholicFilter.value;
+
+    const filtered = catalog.filter(d => {
+      if (nameQ && !(d.strDrink || '').toLowerCase().includes(nameQ)) return false;
+      if (ingQ){
+        const ings = getAllIngredients(d).join(' ').toLowerCase();
+        if (!ings.includes(ingQ)) return false;
+      }
+      if (mainIng && (d.strIngredient1 || '').trim() !== mainIng) return false;
+      if (alcFilter && (d.strAlcoholic || '') !== alcFilter) return false;
+      return true;
+    });
+
+    renderGrid(filtered);
+  }
+
+  function renderGrid(drinks){
+    els.resultCount.textContent = `${drinks.length} drink${drinks.length === 1 ? '' : 's'}`;
+    els.grid.innerHTML = '';
+    els.emptyState.style.display = drinks.length === 0 ? 'block' : 'none';
+
+    const frag = document.createDocumentFragment();
+    drinks.forEach(d => {
+      const card = document.createElement('div');
+      card.className = 'drink-card';
+      card.tabIndex = 0;
+      card.innerHTML = `
+        <img src="${escapeAttr(d.strDrinkThumb)}/small" loading="lazy" alt="${escapeAttr(d.strDrink)}">
+        <div class="name">${escapeHtml(d.strDrink)}</div>
+        <div class="meta">${escapeHtml(d.strCategory || '')}</div>
+      `;
+      card.addEventListener('click', () => openDetail(d));
+      card.addEventListener('keypress', (e) => { if (e.key === 'Enter') openDetail(d); });
+      frag.appendChild(card);
+    });
+    els.grid.appendChild(frag);
+  }
+
+  // ---- Detail view ------------------------------------------------------
+
+  function openDetail(drink){
+    els.detailImg.src = drink.strDrinkThumb || '';
+    els.detailImg.alt = drink.strDrink || '';
+    els.detailName.textContent = drink.strDrink || '';
+
+    const tags = [];
+    if (drink.strCategory) tags.push(drink.strCategory);
+    if (drink.strAlcoholic) tags.push(drink.strAlcoholic);
+    if (drink.strGlass) tags.push(drink.strGlass);
+    els.detailTags.innerHTML = tags.map(t => `<span>${escapeHtml(t)}</span>`).join('');
+
+    els.detailIngredients.innerHTML = '';
+    for (let i = 1; i <= 15; i++){
+      const ing = drink['strIngredient' + i];
+      const measure = drink['strMeasure' + i];
+      if (!ing) continue;
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${escapeHtml(ing.trim())}</span><span class="measure">${escapeHtml((measure || '').trim())}</span>`;
+      els.detailIngredients.appendChild(li);
+    }
+
+    els.detailInstructions.textContent = drink.strInstructions || 'No instructions provided.';
+    els.detailOverlay.classList.add('open');
+  }
+
+  function closeDetail(){
+    els.detailOverlay.classList.remove('open');
+  }
+
+  // ---- Utilities ------------------------------------------------------
+
+  function escapeHtml(str){
+    return String(str || '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  // ---- Wiring -----------------------------------------------------------
+
+  els.nameSearch.addEventListener('input', debounce(applyFilters, 150));
+  els.ingredientSearch.addEventListener('input', debounce(applyFilters, 150));
+  els.mainIngredientFilter.addEventListener('change', applyFilters);
+  els.alcoholicFilter.addEventListener('change', applyFilters);
+  els.closeDetail.addEventListener('click', closeDetail);
+  els.detailOverlay.addEventListener('click', (e) => { if (e.target === els.detailOverlay) closeDetail(); });
+  els.refreshBtn.addEventListener('click', async () => {
+    await buildCatalog();
+    populateMainIngredientFilter();
+    applyFilters();
+  });
+
+  function debounce(fn, ms){
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+
+  // ---- Init -----------------------------------------------------------
+
+  async function init(){
+    const hasCache = loadCatalogFromCache();
+    if (hasCache){
+      els.loadingOverlay.classList.add('hidden');
+      updateStatusLine();
+    } else {
+      await buildCatalog();
+    }
+    populateMainIngredientFilter();
+    applyFilters();
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
