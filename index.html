@@ -120,7 +120,6 @@
     transition: border-color 0.2s, color 0.2s;
   }
   #status-line button:hover{ border-color: var(--gold); color: var(--gold-bright); }
-  #status-line button#home-btn:hover{ border-color: var(--gold); color: var(--gold-bright); }
 
   /* Landing view */
   #landing-view{
@@ -595,7 +594,6 @@
   <div id="status-line">
     <span id="status-text"></span>
     <span class="btn-row">
-      <button id="home-btn">← Home</button>
       <button id="mood-btn">Find Me a Drink</button>
       <button id="reset-btn">Reset</button>
     </span>
@@ -715,7 +713,6 @@
     landingMoodBtn: document.getElementById('landing-mood-btn'),
     landingBrowseBtn: document.getElementById('landing-browse-btn'),
     browseView: document.getElementById('browse-view'),
-    homeBtn: document.getElementById('home-btn'),
     moodOverlay: document.getElementById('mood-overlay'),
     moodCloseBtn: document.getElementById('mood-close-btn'),
     moodStepContainer: document.getElementById('mood-step-container'),
@@ -956,12 +953,15 @@
   let moodPool = []; // drinks matching the most recent computed result, for "suggest another"
   let moodLastDrink = null;
 
-  function getTopMainIngredients(n){
+  function getTopMainIngredients(n, alcFilter){
     // Built from the cached catalog rather than a hardcoded spirit list,
     // so the quiz only ever offers ingredients that actually exist in
-    // the data — no dead-end options.
+    // the data — no dead-end options. When alcFilter is set ('Alcoholic'
+    // or 'Non alcoholic'), only that subset of drinks is counted, so a
+    // non-alcoholic answer never surfaces something like Gin or Whiskey.
     const counts = {};
     catalog.forEach(d => {
+      if (alcFilter && (d.strAlcoholic || '') !== alcFilter) return;
       const ing = (d.strIngredient1 || '').trim();
       if (!ing) return;
       counts[ing] = (counts[ing] || 0) + 1;
@@ -969,55 +969,73 @@
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name]) => name);
   }
 
-  function buildQuizSteps(){
-    const topIngredients = getTopMainIngredients(6);
-    return [
-      {
-        id: 'alcoholic',
-        question: 'Are you drinking tonight?',
-        options: [
-          { label: 'Yes, something alcoholic', value: 'Alcoholic' },
-          { label: 'No, non-alcoholic', value: 'Non alcoholic' },
-          { label: 'No preference', value: '' },
-        ],
-      },
-      {
-        id: 'spirit',
-        question: 'What sounds good right now?',
-        options: [
-          ...topIngredients.map(i => ({ label: i, value: i })),
-          { label: 'Surprise me', value: '' },
-        ],
-      },
-      {
-        id: 'category',
-        question: 'What kind of drink are you after?',
-        // Real strCategory values from the API: Beer, Cocktail, Cocoa,
-        // Coffee / Tea, Homemade Liqueur, Ordinary Drink, Other / Unknown,
-        // Punch / Party Drink, Shake, Shot, Soft Drink. Curated down to the
-        // ones that map to a clear "mood" rather than listing all eleven.
-        options: [
-          { label: 'A proper cocktail', value: 'Cocktail' },
-          { label: 'Something simple', value: 'Ordinary Drink' },
-          { label: 'A quick shot', value: 'Shot' },
-          { label: 'Party punch', value: 'Punch / Party Drink' },
-          { label: 'Surprise me', value: '' },
-        ],
-      },
-    ];
+  const ALCOHOLIC_STEP = {
+    id: 'alcoholic',
+    question: 'Are you drinking tonight?',
+    options: [
+      { label: 'Yes, something alcoholic', value: 'Alcoholic' },
+      { label: 'No, non-alcoholic', value: 'Non alcoholic' },
+      { label: 'No preference', value: '' },
+    ],
+  };
+
+  const CATEGORY_STEP = {
+    id: 'category',
+    question: 'What kind of drink are you after?',
+    // Real strCategory values from the API: Beer, Cocktail, Cocoa,
+    // Coffee / Tea, Homemade Liqueur, Ordinary Drink, Other / Unknown,
+    // Punch / Party Drink, Shake, Shot, Soft Drink. Curated down to the
+    // ones that map to a clear "mood" rather than listing all eleven.
+    options: [
+      { label: 'A proper cocktail', value: 'Cocktail' },
+      { label: 'Something simple', value: 'Ordinary Drink' },
+      { label: 'A quick shot', value: 'Shot' },
+      { label: 'Party punch', value: 'Punch / Party Drink' },
+      { label: 'Surprise me', value: '' },
+    ],
+  };
+
+  function buildSpiritStep(alcAnswer){
+    // The second question branches on the first: an alcoholic answer asks
+    // about spirits, a non-alcoholic answer asks about something else
+    // entirely (juices/mixers/sodas, whatever non-alcoholic drinks in the
+    // data actually lead with) rather than reusing the same spirit list.
+    let question = 'What sounds good right now?';
+    let alcFilter = null;
+    if (alcAnswer === 'Alcoholic'){
+      question = 'What spirit sounds good?';
+      alcFilter = 'Alcoholic';
+    } else if (alcAnswer === 'Non alcoholic'){
+      question = 'What sounds refreshing?';
+      alcFilter = 'Non alcoholic';
+    }
+    const top = getTopMainIngredients(6, alcFilter);
+    return {
+      id: 'spirit',
+      question,
+      options: [
+        ...top.map(i => ({ label: i, value: i })),
+        { label: 'Surprise me', value: '' },
+      ],
+    };
   }
 
   let quizSteps = [];
 
   function openMoodQuiz(){
-    quizSteps = buildQuizSteps();
     moodAnswers = {};
     if (alcMode){
       // The Alcoholic/Non-Alcoholic toggle on the browse view is already an
       // explicit answer to this exact question — asking it again in the quiz
-      // would let someone contradict their own filter by accident.
+      // would let someone contradict their own filter by accident. We still
+      // get the correct branch on the second question since buildSpiritStep
+      // is given the real alcMode value, not a generic one.
       moodAnswers.alcoholic = alcMode;
-      quizSteps = quizSteps.filter(s => s.id !== 'alcoholic');
+      quizSteps = [buildSpiritStep(alcMode), CATEGORY_STEP];
+    } else {
+      // Spirit step starts generic and gets rebuilt the moment the
+      // alcoholic question is actually answered (see renderMoodStep).
+      quizSteps = [ALCOHOLIC_STEP, buildSpiritStep(null), CATEGORY_STEP];
     }
     moodStep = 0;
     els.moodOverlay.classList.add('open');
@@ -1044,6 +1062,12 @@
     els.moodStepContainer.querySelectorAll('.mood-option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         moodAnswers[step.id] = btn.dataset.value;
+        if (step.id === 'alcoholic'){
+          // Now that we know the real answer, rebuild the spirit step to
+          // match it — this is what makes the two flows actually diverge.
+          const spiritIndex = quizSteps.findIndex(s => s.id === 'spirit');
+          quizSteps[spiritIndex] = buildSpiritStep(moodAnswers.alcoholic);
+        }
         if (moodStep < quizSteps.length - 1){
           moodStep++;
           renderMoodStep();
@@ -1108,7 +1132,6 @@
 
   els.landingMoodBtn.addEventListener('click', openMoodQuiz);
   els.landingBrowseBtn.addEventListener('click', showBrowse);
-  els.homeBtn.addEventListener('click', showLanding);
   els.moodCloseBtn.addEventListener('click', closeMoodQuiz);
   els.moodOverlay.addEventListener('click', (e) => { if (e.target === els.moodOverlay) closeMoodQuiz(); });
 
