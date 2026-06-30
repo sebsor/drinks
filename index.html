@@ -31,6 +31,22 @@
 
   *{ box-sizing: border-box; }
 
+  /* Kill the browser's default blue tap/click highlight everywhere, but
+     keep a visible (gold, not blue) focus ring for keyboard navigation —
+     removing focus indicators entirely would break accessibility for
+     anyone tabbing through the page instead of clicking/tapping. */
+  *{ -webkit-tap-highlight-color: transparent; }
+  button, a, input, select, summary{ outline: none; }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  summary:focus-visible,
+  .drink-card:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
   body{
     margin:0;
     background:
@@ -275,7 +291,6 @@
   }
   .drink-card:hover, .drink-card:focus-visible{
     background: var(--bg-elevated);
-    outline: none;
   }
   .drink-card:hover .name, .drink-card:focus-visible .name{ color: var(--gold-bright); }
 
