@@ -96,15 +96,25 @@
     font-size: 0.78rem;
     color: var(--text-dim);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 18px;
-    flex-wrap: wrap;
+    gap: 10px;
     letter-spacing: 0.3px;
-    margin-bottom: 28px;
+    margin: 28px 0 28px;
   }
 
-  #status-line .btn-row{ display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-grid{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .btn-grid button{ width: 100%; }
+
+  .reset-standalone{
+    margin-top: 2px;
+  }
 
   #status-text{ display: none; }
 
@@ -834,13 +844,13 @@
   </header>
   <div id="status-line">
     <span id="status-text"></span>
-    <span class="btn-row">
+    <div class="btn-grid">
       <button id="mood-btn">Find Me a Drink</button>
-      <button id="random-btn">Random</button>
       <button id="whatcan-btn">What Can I Make?</button>
+      <button id="random-btn">Random</button>
       <button id="favorites-toggle-btn">♥ Favorites</button>
-      <button id="reset-btn">Reset</button>
-    </span>
+    </div>
+    <button id="reset-btn" class="reset-standalone">Reset</button>
   </div>
 
   <div class="controls">
