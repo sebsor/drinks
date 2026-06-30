@@ -823,6 +823,7 @@
   <button id="landing-browse-btn" class="cta-button-secondary">Browse All Drinks</button>
   <button id="landing-random-btn" class="cta-button-secondary">Random Drink</button>
   <button id="landing-whatcan-btn" class="cta-button-secondary">What Can I Make?</button>
+  <button id="landing-favorites-btn" class="cta-button-secondary">♥ My Favorites</button>
 </div>
 
 <main id="browse-view" style="display:none;">
@@ -1071,6 +1072,7 @@
     moodRetakeBtn: document.getElementById('mood-retake-btn'),
     landingRandomBtn: document.getElementById('landing-random-btn'),
     landingWhatcanBtn: document.getElementById('landing-whatcan-btn'),
+    landingFavoritesBtn: document.getElementById('landing-favorites-btn'),
     randomBtn: document.getElementById('random-btn'),
     whatcanBtn: document.getElementById('whatcan-btn'),
     favoritesToggleBtn: document.getElementById('favorites-toggle-btn'),
@@ -1573,6 +1575,12 @@
 
   els.landingMoodBtn.addEventListener('click', openMoodQuiz);
   els.landingBrowseBtn.addEventListener('click', showBrowse);
+  els.landingFavoritesBtn.addEventListener('click', () => {
+    favoritesOnly = true;
+    els.favoritesToggleBtn.classList.add('active');
+    applyFilters();
+    showBrowse();
+  });
   els.moodCloseBtn.addEventListener('click', closeMoodQuiz);
   els.moodOverlay.addEventListener('click', (e) => { if (e.target === els.moodOverlay) closeMoodQuiz(); });
 
