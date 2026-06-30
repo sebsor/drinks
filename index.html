@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Back Bar</title>
+<title>Heron & Oak</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -97,9 +97,10 @@
     gap: 18px;
     flex-wrap: wrap;
     letter-spacing: 0.3px;
+    margin-bottom: 28px;
   }
 
-  #status-line .btn-row{ display: flex; gap: 10px; }
+  #status-line .btn-row{ display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
   #status-text{ display: none; }
 
@@ -118,6 +119,32 @@
   }
   #status-line button:hover{ border-color: var(--gold); color: var(--gold-bright); }
   #status-line button#reset-btn:hover{ border-color: var(--burgundy-bright); color: var(--burgundy-bright); }
+  #status-line button#home-btn:hover{ border-color: var(--gold); color: var(--gold-bright); }
+
+  /* Landing view */
+  #landing-view{
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px 24px;
+  }
+
+  .cta-button-secondary{
+    display: inline-block;
+    background: none;
+    border: 1px solid var(--hairline-bright);
+    color: var(--text-dim);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    padding: 12px 30px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .cta-button-secondary:hover{ border-color: var(--gold); color: var(--gold-bright); }
 
   main{
     padding: 36px 24px 70px;
@@ -417,6 +444,124 @@
     font-size: 1.05rem;
   }
   #loading-progress{ color: var(--text-dim); font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; opacity: 0.7; }
+
+  .cta-button{
+    display: inline-block;
+    margin: 6px 0 22px;
+    background: var(--gold);
+    border: none;
+    color: #16110d;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 12px 30px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .cta-button:hover{ background: var(--gold-bright); transform: translateY(-1px); }
+
+  /* Mood quiz overlay */
+  #mood-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5,4,3,0.92);
+    z-index: 60;
+    overflow-y: auto;
+    padding: 30px 20px;
+  }
+  #mood-overlay.open{ display: block; }
+
+  .mood-card{
+    max-width: 560px;
+    margin: 0 auto;
+    background: var(--bg-elevated);
+    border: 1px solid var(--hairline-bright);
+    min-height: 320px;
+  }
+
+  #mood-step-container{
+    padding: 10px 36px 44px;
+    text-align: center;
+  }
+
+  .mood-progress{
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin: 0 0 18px;
+  }
+
+  .mood-question{
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--text);
+    margin: 0 0 28px;
+  }
+
+  .mood-options{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mood-option-btn{
+    background: var(--bg-card);
+    border: 1px solid var(--hairline-bright);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 13px 18px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .mood-option-btn:hover{
+    border-color: var(--gold);
+    background: var(--bg-elevated);
+    color: var(--gold-bright);
+  }
+
+  .mood-back-btn{
+    margin-top: 22px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .mood-back-btn:hover{ color: var(--gold-bright); }
+
+  /* Mood result note + actions, shown inside the existing detail card */
+  #mood-note{
+    display: none;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin: 0 0 16px;
+  }
+  #mood-actions{
+    display: none;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  #mood-actions button{
+    background: none;
+    border: 1px solid var(--hairline-bright);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  #mood-actions button:hover{ border-color: var(--gold); color: var(--gold-bright); }
 </style>
 </head>
 <body>
@@ -429,18 +574,26 @@
 
 <header>
   <p class="eyebrow">Established on TheCocktailDB</p>
-  <h1>The Back Bar<span class="amp">.</span></h1>
+  <h1>Heron <span class="amp">&amp;</span> Oak</h1>
   <p class="tagline">A private catalog of the world's cocktails</p>
+</header>
+
+<div id="landing-view">
+  <button id="landing-mood-btn" class="cta-button">Find Me a Drink</button>
+  <button id="landing-browse-btn" class="cta-button-secondary">Browse All Drinks</button>
+</div>
+
+<main id="browse-view" style="display:none;">
   <div id="status-line">
     <span id="status-text"></span>
     <span class="btn-row">
+      <button id="home-btn">← Home</button>
+      <button id="mood-btn">Find Me a Drink</button>
       <button id="refresh-btn">Refresh</button>
       <button id="reset-btn">Reset</button>
     </span>
   </div>
-</header>
 
-<main>
   <div class="controls">
     <div class="search-row">
       <input type="text" id="name-search" placeholder="Search by drink name…">
@@ -469,11 +622,23 @@
     <div class="detail-body">
       <h2 id="detail-name"></h2>
       <div class="detail-tags" id="detail-tags"></div>
+      <p id="mood-note"></p>
+      <div id="mood-actions">
+        <button id="mood-another-btn" type="button">Suggest another</button>
+        <button id="mood-retake-btn" type="button">Retake the quiz</button>
+      </div>
       <div class="detail-section-label">Ingredients</div>
       <ul class="ingredient-list" id="detail-ingredients"></ul>
       <div class="detail-section-label">How to make it</div>
       <p class="instructions" id="detail-instructions"></p>
     </div>
+  </div>
+</div>
+
+<div id="mood-overlay">
+  <div class="mood-card">
+    <div class="detail-close"><button id="mood-close-btn">Close ✕</button></div>
+    <div id="mood-step-container"></div>
   </div>
 </div>
 
@@ -539,6 +704,19 @@
     detailTags: document.getElementById('detail-tags'),
     detailIngredients: document.getElementById('detail-ingredients'),
     detailInstructions: document.getElementById('detail-instructions'),
+    moodBtn: document.getElementById('mood-btn'),
+    landingView: document.getElementById('landing-view'),
+    landingMoodBtn: document.getElementById('landing-mood-btn'),
+    landingBrowseBtn: document.getElementById('landing-browse-btn'),
+    browseView: document.getElementById('browse-view'),
+    homeBtn: document.getElementById('home-btn'),
+    moodOverlay: document.getElementById('mood-overlay'),
+    moodCloseBtn: document.getElementById('mood-close-btn'),
+    moodStepContainer: document.getElementById('mood-step-container'),
+    moodNote: document.getElementById('mood-note'),
+    moodActions: document.getElementById('mood-actions'),
+    moodAnotherBtn: document.getElementById('mood-another-btn'),
+    moodRetakeBtn: document.getElementById('mood-retake-btn'),
   };
 
   // ---- Catalog loading ----------------------------------------------
@@ -683,7 +861,8 @@
 
   // ---- Detail view ------------------------------------------------------
 
-  function openDetail(drink){
+  function openDetail(drink, opts){
+    opts = opts || {};
     els.detailImg.src = drink.strDrinkThumb || '';
     els.detailImg.alt = drink.strDrink || '';
     els.detailName.textContent = drink.strDrink || '';
@@ -705,6 +884,18 @@
     }
 
     els.detailInstructions.textContent = drink.strInstructions || 'No instructions provided.';
+
+    if (opts.fromMood){
+      els.moodActions.style.display = 'flex';
+      els.moodNote.style.display = opts.relaxed ? 'block' : 'none';
+      els.moodNote.textContent = opts.relaxed
+        ? "Couldn't find a perfect match for everything you picked, so this one's the closest fit."
+        : '';
+    } else {
+      els.moodActions.style.display = 'none';
+      els.moodNote.style.display = 'none';
+    }
+
     els.detailOverlay.classList.add('open');
   }
 
@@ -745,6 +936,182 @@
   els.nameSearch.addEventListener('input', debounce(applyFilters, 150));
   els.ingredientSearch.addEventListener('input', debounce(applyFilters, 150));
   els.mainIngredientFilter.addEventListener('change', applyFilters);
+  // ---- Mood quiz ------------------------------------------------------
+
+  let moodStep = 0;
+  let moodAnswers = {};
+  let moodPool = []; // drinks matching the most recent computed result, for "suggest another"
+  let moodLastDrink = null;
+
+  function getTopMainIngredients(n){
+    // Built from the cached catalog rather than a hardcoded spirit list,
+    // so the quiz only ever offers ingredients that actually exist in
+    // the data — no dead-end options.
+    const counts = {};
+    catalog.forEach(d => {
+      const ing = (d.strIngredient1 || '').trim();
+      if (!ing) return;
+      counts[ing] = (counts[ing] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name]) => name);
+  }
+
+  function buildQuizSteps(){
+    const topIngredients = getTopMainIngredients(6);
+    return [
+      {
+        id: 'alcoholic',
+        question: 'Are you drinking tonight?',
+        options: [
+          { label: 'Yes, something alcoholic', value: 'Alcoholic' },
+          { label: 'No, non-alcoholic', value: 'Non alcoholic' },
+          { label: 'No preference', value: '' },
+        ],
+      },
+      {
+        id: 'spirit',
+        question: 'What sounds good right now?',
+        options: [
+          ...topIngredients.map(i => ({ label: i, value: i })),
+          { label: 'Surprise me', value: '' },
+        ],
+      },
+      {
+        id: 'category',
+        question: 'What kind of drink are you after?',
+        // Real strCategory values from the API: Beer, Cocktail, Cocoa,
+        // Coffee / Tea, Homemade Liqueur, Ordinary Drink, Other / Unknown,
+        // Punch / Party Drink, Shake, Shot, Soft Drink. Curated down to the
+        // ones that map to a clear "mood" rather than listing all eleven.
+        options: [
+          { label: 'A proper cocktail', value: 'Cocktail' },
+          { label: 'Something simple', value: 'Ordinary Drink' },
+          { label: 'A quick shot', value: 'Shot' },
+          { label: 'Party punch', value: 'Punch / Party Drink' },
+          { label: 'Surprise me', value: '' },
+        ],
+      },
+    ];
+  }
+
+  let quizSteps = [];
+
+  function openMoodQuiz(){
+    quizSteps = buildQuizSteps();
+    moodStep = 0;
+    moodAnswers = {};
+    els.moodOverlay.classList.add('open');
+    renderMoodStep();
+  }
+
+  function closeMoodQuiz(){
+    els.moodOverlay.classList.remove('open');
+  }
+
+  function renderMoodStep(){
+    const step = quizSteps[moodStep];
+    const optionsHtml = step.options.map(opt =>
+      `<button type="button" class="mood-option-btn" data-value="${escapeAttr(opt.value)}">${escapeHtml(opt.label)}</button>`
+    ).join('');
+
+    els.moodStepContainer.innerHTML = `
+      <p class="mood-progress">Question ${moodStep + 1} of ${quizSteps.length}</p>
+      <p class="mood-question">${escapeHtml(step.question)}</p>
+      <div class="mood-options">${optionsHtml}</div>
+      ${moodStep > 0 ? '<button type="button" class="mood-back-btn" id="mood-back-btn">Back</button>' : ''}
+    `;
+
+    els.moodStepContainer.querySelectorAll('.mood-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        moodAnswers[step.id] = btn.dataset.value;
+        if (moodStep < quizSteps.length - 1){
+          moodStep++;
+          renderMoodStep();
+        } else {
+          finishMoodQuiz();
+        }
+      });
+    });
+
+    const backBtn = document.getElementById('mood-back-btn');
+    if (backBtn) backBtn.addEventListener('click', () => { moodStep--; renderMoodStep(); });
+  }
+
+  function filterByMoodCriteria(criteria){
+    return catalog.filter(d => {
+      if (criteria.alcoholic && (d.strAlcoholic || '') !== criteria.alcoholic) return false;
+      if (criteria.category && (d.strCategory || '') !== criteria.category) return false;
+      if (criteria.spirit){
+        const ings = getAllIngredients(d).join(' ').toLowerCase();
+        if (!ings.includes(criteria.spirit.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }
+
+  function computeMoodResult(answers){
+    // Try the exact match first, then progressively relax the least-recently-asked
+    // constraints (category, then spirit, then alcoholic) so three real preferences
+    // never produce a dead end just because that exact combination isn't in the data.
+    const attempts = [
+      { alcoholic: answers.alcoholic, category: answers.category, spirit: answers.spirit },
+      { alcoholic: answers.alcoholic, spirit: answers.spirit },
+      { alcoholic: answers.alcoholic },
+      {},
+    ];
+    for (let i = 0; i < attempts.length; i++){
+      const pool = filterByMoodCriteria(attempts[i]);
+      if (pool.length > 0) return { pool, relaxed: i > 0 };
+    }
+    return { pool: catalog, relaxed: true };
+  }
+
+  function finishMoodQuiz(){
+    const { pool, relaxed } = computeMoodResult(moodAnswers);
+    moodPool = pool;
+    moodLastDrink = pool[Math.floor(Math.random() * pool.length)];
+    closeMoodQuiz();
+    openDetail(moodLastDrink, { fromMood: true, relaxed });
+  }
+
+  els.moodBtn.addEventListener('click', openMoodQuiz);
+
+  function showLanding(){
+    els.landingView.style.display = 'flex';
+    els.browseView.style.display = 'none';
+  }
+
+  function showBrowse(){
+    els.landingView.style.display = 'none';
+    els.browseView.style.display = 'block';
+  }
+
+  els.landingMoodBtn.addEventListener('click', openMoodQuiz);
+  els.landingBrowseBtn.addEventListener('click', showBrowse);
+  els.homeBtn.addEventListener('click', showLanding);
+  els.moodCloseBtn.addEventListener('click', closeMoodQuiz);
+  els.moodOverlay.addEventListener('click', (e) => { if (e.target === els.moodOverlay) closeMoodQuiz(); });
+
+  els.moodAnotherBtn.addEventListener('click', () => {
+    // Pick a different drink from the same pool where possible, rather than
+    // re-running the relax-and-filter logic, so "another" stays fast and
+    // doesn't silently change the relaxation note underneath the user.
+    let next = moodLastDrink;
+    if (moodPool.length > 1){
+      while (next === moodLastDrink){
+        next = moodPool[Math.floor(Math.random() * moodPool.length)];
+      }
+    }
+    moodLastDrink = next;
+    const wasRelaxed = els.moodNote.style.display === 'block';
+    openDetail(moodLastDrink, { fromMood: true, relaxed: wasRelaxed });
+  });
+
+  els.moodRetakeBtn.addEventListener('click', () => {
+    closeDetail();
+    openMoodQuiz();
+  });
+
   els.closeDetail.addEventListener('click', closeDetail);
   els.detailOverlay.addEventListener('click', (e) => { if (e.target === els.detailOverlay) closeDetail(); });
   els.refreshBtn.addEventListener('click', async () => {
@@ -787,6 +1154,7 @@
     }
     populateMainIngredientFilter();
     applyFilters();
+    showLanding();
   }
 
   init();
