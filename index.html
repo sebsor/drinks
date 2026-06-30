@@ -296,6 +296,7 @@
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
   #loading-text{ color: var(--text-dim); font-size: 0.85rem; }
+  #loading-progress{ color: var(--text-dim); font-size: 0.7rem; opacity: 0.6; }
 </style>
 </head>
 <body>
@@ -303,6 +304,7 @@
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div id="loading-text">Loading catalog…</div>
+  <div id="loading-progress"></div>
 </div>
 
 <header>
@@ -363,9 +365,38 @@
 
   let catalog = []; // flat array of drink objects from the API
 
+  const LOADING_MESSAGES = [
+    'Finding the drinking glasses…',
+    'Wiping down the bar…',
+    'Counting the bottles…',
+    'Untangling the garnish drawer…',
+    'Chasing down a wandering olive…',
+    'Convincing the shaker to cooperate…',
+    'Restocking the bitters…',
+    'Polishing the cocktail menu…',
+    'Bribing the bartender for recipes…',
+    'Sorting limes from lemons…',
+  ];
+  let loadingMessageTimer = null;
+
+  function startLoadingMessages(){
+    let i = Math.floor(Math.random() * LOADING_MESSAGES.length);
+    els.loadingText.textContent = LOADING_MESSAGES[i];
+    loadingMessageTimer = setInterval(() => {
+      i = (i + 1) % LOADING_MESSAGES.length;
+      els.loadingText.textContent = LOADING_MESSAGES[i];
+    }, 1400);
+  }
+
+  function stopLoadingMessages(){
+    clearInterval(loadingMessageTimer);
+    loadingMessageTimer = null;
+  }
+
   const els = {
     loadingOverlay: document.getElementById('loading-overlay'),
     loadingText: document.getElementById('loading-text'),
+    loadingProgress: document.getElementById('loading-progress'),
     statusText: document.getElementById('status-text'),
     refreshBtn: document.getElementById('refresh-btn'),
     nameSearch: document.getElementById('name-search'),
@@ -392,24 +423,56 @@
     return data.drinks || [];
   }
 
+  function trimForCache(drinks){
+    // We only ever read strInstructions (English) in this app, but the API
+    // returns 6 extra translated copies per drink (ES/DE/FR/IT/ZH-HANS/ZH-HANT).
+    // Dropping those roughly halves the payload size before it hits localStorage.
+    const dropKeys = ['strInstructionsES','strInstructionsDE','strInstructionsFR','strInstructionsIT','strInstructionsZH-HANS','strInstructionsZH-HANT','strImageSource','strImageAttribution','strCreativeCommonsConfirmed','strDrinkAlternate'];
+    return drinks.map(d => {
+      const copy = { ...d };
+      dropKeys.forEach(k => delete copy[k]);
+      return copy;
+    });
+  }
+
   async function buildCatalog(){
     els.loadingOverlay.classList.remove('hidden');
+    startLoadingMessages();
     const results = [];
-    for (let i = 0; i < LETTERS.length; i++){
-      const letter = LETTERS[i];
-      els.loadingText.textContent = `Loading catalog… (${letter.toUpperCase()}, ${i + 1}/${LETTERS.length})`;
-      try {
-        const drinks = await fetchLetter(letter);
-        results.push(...drinks);
-      } catch (err) {
-        console.error('Failed to fetch letter', letter, err);
+    let cachedOk = false;
+    try {
+      for (let i = 0; i < LETTERS.length; i++){
+        const letter = LETTERS[i];
+        els.loadingProgress.textContent = `${letter.toUpperCase()} · ${i + 1}/${LETTERS.length}`;
+        try {
+          const drinks = await fetchLetter(letter);
+          results.push(...drinks);
+        } catch (err) {
+          console.error('Failed to fetch letter', letter, err);
+        }
       }
+      catalog = results;
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(trimForCache(catalog)));
+        localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+        cachedOk = true;
+      } catch (err) {
+        // Most likely QuotaExceededError: the full catalog (~600 drinks x
+        // 5 language fields + 30 ingredient/measure fields each) can exceed
+        // a browser's localStorage limit (commonly 5-10MB). The app still
+        // works fine for this session using the in-memory `catalog` array;
+        // it just won't be cached for next time.
+        console.warn('Could not cache catalog to localStorage (likely quota exceeded). Continuing without cache.', err);
+      }
+    } finally {
+      stopLoadingMessages();
+      els.loadingOverlay.classList.add('hidden');
     }
-    catalog = results;
-    localStorage.setItem(CACHE_KEY, JSON.stringify(catalog));
-    localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
-    els.loadingOverlay.classList.add('hidden');
-    updateStatusLine();
+    if (cachedOk){
+      updateStatusLine();
+    } else {
+      els.statusText.textContent = `${catalog.length} drinks loaded (not cached — storage quota exceeded)`;
+    }
   }
 
   function loadCatalogFromCache(){
