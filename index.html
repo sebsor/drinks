@@ -140,6 +140,46 @@
     flex-wrap: wrap;
   }
 
+  /* Mode themes — override the gold trio; nearly every accent in this
+     stylesheet reads from these three variables, so swapping them on
+     <body> recolors buttons, tags, hovers, and headers in one move. */
+  body.mode-alcoholic{
+    --gold: #c98a3f;
+    --gold-bright: #e8a85e;
+    --gold-dim: #a8702f;
+  }
+  body.mode-nonalcoholic{
+    --gold: #5f9e82;
+    --gold-bright: #84c9a4;
+    --gold-dim: #4d7e68;
+  }
+
+  .toggle-group{
+    display: flex;
+    flex: 1 1 220px;
+    border: 1px solid var(--hairline-bright);
+  }
+  .toggle-btn{
+    flex: 1;
+    background: var(--bg-card);
+    border: none;
+    border-right: 1px solid var(--hairline-bright);
+    color: var(--text-dim);
+    padding: 11px 14px;
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .toggle-btn:last-child{ border-right: none; }
+  .toggle-btn:hover{ color: var(--text); }
+  .toggle-btn.active{
+    background: var(--gold-dim);
+    color: #16110d;
+    font-weight: 600;
+  }
+
   input[type="text"], select{
     background: var(--bg-card);
     border: 1px solid var(--hairline-bright);
@@ -410,11 +450,10 @@
       <select id="main-ingredient-filter">
         <option value="">All main ingredients</option>
       </select>
-      <select id="alcoholic-filter">
-        <option value="">Alcoholic & non-alcoholic</option>
-        <option value="Alcoholic">Alcoholic only</option>
-        <option value="Non alcoholic">Non-alcoholic only</option>
-      </select>
+      <div class="toggle-group" id="alc-toggle">
+        <button type="button" class="toggle-btn" id="alc-btn-alcoholic" data-value="Alcoholic">Alcoholic</button>
+        <button type="button" class="toggle-btn" id="alc-btn-nonalcoholic" data-value="Non alcoholic">Non-Alcoholic</button>
+      </div>
     </div>
   </div>
 
@@ -448,6 +487,7 @@
   const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
   let catalog = []; // flat array of drink objects from the API
+  let alcMode = ''; // '' = all, 'Alcoholic', or 'Non alcoholic'
 
   const LOADING_MESSAGES = [
     'Finding the drinking glasses…',
@@ -487,7 +527,8 @@
     nameSearch: document.getElementById('name-search'),
     ingredientSearch: document.getElementById('ingredient-search'),
     mainIngredientFilter: document.getElementById('main-ingredient-filter'),
-    alcoholicFilter: document.getElementById('alcoholic-filter'),
+    alcBtnAlcoholic: document.getElementById('alc-btn-alcoholic'),
+    alcBtnNonalcoholic: document.getElementById('alc-btn-nonalcoholic'),
     resultCount: document.getElementById('result-count'),
     grid: document.getElementById('drink-grid'),
     emptyState: document.getElementById('empty-state'),
@@ -602,7 +643,7 @@
     const nameQ = els.nameSearch.value.trim().toLowerCase();
     const ingQ = els.ingredientSearch.value.trim().toLowerCase();
     const mainIng = els.mainIngredientFilter.value;
-    const alcFilter = els.alcoholicFilter.value;
+    const alcFilter = alcMode;
 
     const filtered = catalog.filter(d => {
       if (nameQ && !(d.strDrink || '').toLowerCase().includes(nameQ)) return false;
@@ -682,10 +723,28 @@
 
   // ---- Wiring -----------------------------------------------------------
 
+  function setAlcMode(value){
+    // Clicking the already-active button turns it off (back to "all").
+    // Clicking the other button switches modes outright. Only one mode,
+    // or none, is ever active — this mirrors what the old select allowed.
+    alcMode = (alcMode === value) ? '' : value;
+
+    els.alcBtnAlcoholic.classList.toggle('active', alcMode === 'Alcoholic');
+    els.alcBtnNonalcoholic.classList.toggle('active', alcMode === 'Non alcoholic');
+
+    document.body.classList.remove('mode-alcoholic', 'mode-nonalcoholic');
+    if (alcMode === 'Alcoholic') document.body.classList.add('mode-alcoholic');
+    if (alcMode === 'Non alcoholic') document.body.classList.add('mode-nonalcoholic');
+
+    applyFilters();
+  }
+
+  els.alcBtnAlcoholic.addEventListener('click', () => setAlcMode('Alcoholic'));
+  els.alcBtnNonalcoholic.addEventListener('click', () => setAlcMode('Non alcoholic'));
+
   els.nameSearch.addEventListener('input', debounce(applyFilters, 150));
   els.ingredientSearch.addEventListener('input', debounce(applyFilters, 150));
   els.mainIngredientFilter.addEventListener('change', applyFilters);
-  els.alcoholicFilter.addEventListener('change', applyFilters);
   els.closeDetail.addEventListener('click', closeDetail);
   els.detailOverlay.addEventListener('click', (e) => { if (e.target === els.detailOverlay) closeDetail(); });
   els.refreshBtn.addEventListener('click', async () => {
@@ -701,7 +760,10 @@
     els.nameSearch.value = '';
     els.ingredientSearch.value = '';
     els.mainIngredientFilter.value = '';
-    els.alcoholicFilter.value = '';
+    alcMode = '';
+    els.alcBtnAlcoholic.classList.remove('active');
+    els.alcBtnNonalcoholic.classList.remove('active');
+    document.body.classList.remove('mode-alcoholic', 'mode-nonalcoholic');
     catalog = [];
     await buildCatalog();
     populateMainIngredientFilter();
